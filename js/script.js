@@ -32,14 +32,13 @@
     let scenePrg, finalPrg, noisePrg, gaussPrg, positionPrg, velocityPrg;
     let gWeight, nowTime;
     let canvasWidth, canvasHeight, bufferSize, gpgpuBufferSize;
-    let pCanvas, pContext, pPower, pTarget, pCount, pListener;
 
     // variable initialize ====================================================
     run = true;
     mat4 = gl3.mat4;
     qtn = gl3.qtn;
     bufferSize = 1024;
-    gpgpuBufferSize = 512;
+    gpgpuBufferSize = 64;
 
     // const variable =========================================================
     let DEFAULT_CAM_POSITION = [0.0, 0.0, 3.0];
@@ -48,8 +47,6 @@
 
     // onload =================================================================
     window.addEventListener('load', () => {
-        progressInit();
-
         // gl3 initialize
         gl3.initGL('canvas');
         if(!gl3.ready){console.log('initialize error'); return;}
@@ -67,18 +64,7 @@
         window.addEventListener('keydown', (eve) => {
             run = (eve.keyCode !== 27);
             console.log(nowTime);
-            switch(eve.keyCode){
-                case 13:
-                    progressRender();
-                    break;
-                default :
-                    break;
-            }
         }, true);
-
-        // progress == 20%
-        pTarget = 20;
-        pCount = 0;
 
         shaderLoader();
     }, false);
@@ -90,8 +76,8 @@
             'shader/planePoint.frag',
             ['position', 'color', 'texCoord', 'type', 'random'],
             [3, 4, 2, 4, 4],
-            ['mvpMatrix', 'positionTexture', 'time'],
-            ['matrix4fv', '1i', '1f'],
+            ['mvpMatrix', 'positionTexture', 'time', 'globalColor'],
+            ['matrix4fv', '1i', '1f', '4fv'],
             shaderLoadCheck
         );
 
@@ -158,10 +144,7 @@
                positionPrg.prg != null &&
                velocityPrg.prg != null &&
             true){
-                // progress == 100%
-                pPower = pTarget;
-                pTarget = 100;
-                pCount = 0;
+                init();
             }
         }
     }
@@ -172,7 +155,7 @@
         canvasHeight  = window.innerHeight;
         canvas.width  = canvasWidth;
         canvas.height = canvasHeight;
-        gWeight = gaussWeight(10, 100.0);
+        gWeight = gaussWeight(20, 100.0);
 
         // tiled plane point mesh
         let tiledPlanePointData = tiledPlanePoint(gpgpuBufferSize);
@@ -313,7 +296,7 @@
             mat4.identity(mMatrix);
             mat4.rotate(mMatrix, Math.sin(nowTime), [1, 1, 0], mMatrix);
             mat4.multiply(vpMatrix, mMatrix, mvpMatrix);
-            scenePrg.push_shader([mvpMatrix, 4 + targetBufferNum, nowTime]);
+            scenePrg.push_shader([mvpMatrix, 4 + targetBufferNum, nowTime, [0.8, 0.75, 1.0, 0.5]]);
             gl3.draw_arrays(gl.POINTS, tiledPlanePointLength);
             gl3.draw_elements_int(gl.LINES, tiledPlanePointData.indexCross.length);
 
@@ -363,66 +346,6 @@
             weight[i] /= t;
         }
         return weight;
-    }
-
-    function fullscreenRequest(){
-        let b = document.body;
-        if(b.requestFullscreen){
-            b.requestFullscreen();
-        }else if(b.webkitRequestFullscreen){
-            b.webkitRequestFullscreen();
-        }else if(b.mozRequestFullscreen){
-            b.mozRequestFullscreen();
-        }else if(b.msRequestFullscreen){
-            b.msRequestFullscreen();
-        }
-    }
-
-    // progress ===============================================================
-    function progressInit(){
-        pPower = pTarget = pCount = 0;
-        pListener = [];
-        pCanvas = document.getElementById('progress');
-        pCanvas.width = pCanvas.height = 100;
-        pContext = pCanvas.getContext('2d');
-        pContext.strokeStyle = 'white';
-        progressUpdate();
-    }
-
-    function progressUpdate(){
-        let i = gl3.util.easeOutCubic(Math.min(pCount / 10, 1.0));
-        let j = (pPower + Math.floor((pTarget - pPower) * i)) / 100;
-        let k = -Math.PI * 0.5;
-        pContext.clearRect(0, 0, 100, 100);
-        pContext.beginPath();
-        pContext.arc(50, 50, 30, k, k + j * 2.0 * Math.PI, false);
-        pContext.stroke();
-        pContext.closePath();
-        if(pTarget !== pPower){pCount++;}
-        if(pCount > 10 && pTarget === 100){
-            let e = document.getElementById('start');
-            e.textContent = 'ready';
-            e.className = '';
-            e.addEventListener('click', progressRender, false);
-            return;
-        }
-        requestAnimationFrame(progressUpdate);
-    }
-
-    function progressRender(){
-        if(pCount <= 10 || pTarget !== 100){return;}
-        let e = document.getElementById('start');
-        if(e.className !== ''){return;}
-        e.textContent = 'start';
-        e.className = 'disabled';
-        e = document.getElementById('layer');
-        e.className = 'disabled';
-        setTimeout(() => {
-            let e = document.getElementById('layer');
-            e.className = 'none';
-            // fullscreenRequest();
-            init();
-        }, 2000);
     }
 })(this);
 

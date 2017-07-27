@@ -150,6 +150,12 @@
     }
 
     function init(){
+        let resetBufferFunction = null;
+        window.addEventListener('resize', () => {
+            resetBufferFunction = generateScreenBuffer;
+            run = false;
+        }, false);
+
         // application setting
         canvasWidth   = window.innerWidth;
         canvasHeight  = window.innerHeight;
@@ -202,9 +208,29 @@
         let invMatrix = mat4.identity(mat4.create());
 
         // frame buffer
-        let frameBuffer  = gl3.create_framebuffer(canvasWidth, canvasHeight, 0);
-        let hGaussBuffer = gl3.create_framebuffer(canvasWidth, canvasHeight, 1);
-        let vGaussBuffer = gl3.create_framebuffer(canvasWidth, canvasHeight, 2);
+        let frameBuffer, hGaussBuffer, vGaussBuffer;
+        generateScreenBuffer();
+        function generateScreenBuffer(){
+            if(frameBuffer != null){
+                gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+                let arr = [frameBuffer, hGaussBuffer, vGaussBuffer];
+                for(let i = 0; i < 3; ++i){
+                    gl.activeTexture(gl.TEXTURE0 + i);
+                    gl.bindTexture(gl.TEXTURE_2D, null);
+                    gl.deleteTexture(arr[i].texture);
+                    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+                    gl.deleteRenderbuffer(arr[i].depthRenderbuffer);
+                    gl.deleteFramebuffer(arr[i].framebuffer);
+                }
+            }
+            frameBuffer  = gl3.create_framebuffer(canvasWidth, canvasHeight, 0);
+            hGaussBuffer = gl3.create_framebuffer(canvasWidth, canvasHeight, 1);
+            vGaussBuffer = gl3.create_framebuffer(canvasWidth, canvasHeight, 2);
+            for(let i = 0; i < 3; ++i){
+                gl.activeTexture(gl.TEXTURE0 + i);
+                gl.bindTexture(gl.TEXTURE_2D, gl3.textures[i].texture);
+            }
+        }
         let noiseBuffer = gl3.create_framebuffer(bufferSize, bufferSize, 3);
         let positionBuffer = [];
         positionBuffer[0] = gl3.create_framebuffer_float(gpgpuBufferSize, gpgpuBufferSize, 4);
@@ -328,7 +354,16 @@
             finalPrg.push_shader([[1.0, 1.0, 1.0, 1.0], 2, nowTime, [canvasWidth, canvasHeight]]);
             gl3.draw_elements_int(gl.TRIANGLES, planeIndex.length);
 
-            if(run){requestAnimationFrame(render);}
+            if(run){
+                requestAnimationFrame(render);
+            }else{
+                if(resetBufferFunction != null){
+                    resetBufferFunction();
+                    resetBufferFunction = null;
+                    run = true;
+                    requestAnimationFrame(render);
+                }
+            }
         }
     }
 

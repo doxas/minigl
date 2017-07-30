@@ -3,7 +3,7 @@
 var gl3 = gl3 || {};
 
 // const
-gl3.VERSION = '0.0.4b';
+gl3.VERSION = '0.0.4c';
 gl3.PI2  = 6.28318530717958647692528676655900576;
 gl3.PI   = 3.14159265358979323846264338327950288;
 gl3.PIH  = 1.57079632679489661923132169163975144;
@@ -442,7 +442,7 @@ gl3.create_framebuffer = function(width, height, number){
     return {framebuffer: frameBuffer, depthRenderbuffer: depthRenderBuffer, texture: fTexture};
 };
 
-gl3.create_framebuffer_float = function(width, height, number){
+gl3.create_framebuffer_float = function(width, height, number, ext){
     if(width == null || height == null || number == null){return;}
     var gl = this.gl;
     this.textures[number] = {texture: null, type: null, loaded: false};
@@ -450,7 +450,11 @@ gl3.create_framebuffer_float = function(width, height, number){
     gl.bindFramebuffer(gl.FRAMEBUFFER, frameBuffer);
     var fTexture = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, fTexture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.FLOAT, null);
+    if(ext){
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, ext.textureHalfFloat.HALF_FLOAT_OES, null);
+    }else{
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.FLOAT, null);
+    }
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);

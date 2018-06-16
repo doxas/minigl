@@ -1,0 +1,30 @@
+{
+  "name": "minigl",
+  "version": "0.0.1",
+  "description": "mini gl experiments",
+  "main": "src/script.js",
+  "scripts": {
+    "build": "set NODE_ENV=release&& webpack -p",
+    "debug": "webpack --debug -w"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/doxas/minigl.git"
+  },
+  "keywords": [
+    "webgl",
+    "glsl"
+  ],
+  "author": "doxas",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/doxas/minigl/issues"
+  },
+  "homepage": "https://github.com/doxas/minigl#readme",
+  "devDependencies": {
+    "babel-core": "^6.26.0",
+    "babel-loader": "^7.1.2",
+    "babel-preset-env": "^1.6.1",
+    "webpack": "^3.10.0"
+  }
+}

@@ -1,4 +1,4 @@
 # minigl
 
-mini webgl template
+mini gl experiments
 

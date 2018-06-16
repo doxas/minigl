@@ -9,7 +9,7 @@
  *  {vec4} type,
  *  {vec4} random
  */
-function tiledPlanePoint(res){
+export function tiledPlanePoint(res){
     var i, j, k, l, m, n;
     var x, y, z, r, g, b, a;
     var pos = [];            // position.xyz

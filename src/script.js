@@ -22,43 +22,38 @@ import {tiledPlanePoint} from './geometory.js';
  * velocityPrg: gpgpu velocity update program
  */
 
-// variable ===============================================================
+// variable ===================================================================
 let gl3 = new glcubic();
-let canvas, gl, ext, run, mat4, qtn;
+let canvas, gl, run, mat4, qtn;
 let scenePrg, finalPrg, noisePrg, gaussPrg, positionPrg, velocityPrg;
 let gWeight, nowTime;
-let canvasWidth, canvasHeight, bufferSize, gpgpuBufferSize;
+let canvasWidth, canvasHeight;
 
-// variable initialize ====================================================
-run = true;
+// variable initialize ========================================================
+run  = true;
 mat4 = gl3.Math.Mat4;
-qtn = gl3.Math.Qtn;
-bufferSize = 1024;
-gpgpuBufferSize = 64;
+qtn  = gl3.Math.Qtn;
 
-// const variable =========================================================
+// const variable =============================================================
+const BUFFER_SIZE          = 1024;
+const GPGPU_BUFFER_SIZE    = 64;
 const DEFAULT_CAM_POSITION = [0.0, 0.0, 3.0];
 const DEFAULT_CAM_CENTER   = [0.0, 0.0, 0.0];
 const DEFAULT_CAM_UP       = [0.0, 1.0, 0.0];
 
-// onload =================================================================
+// onload =====================================================================
 window.addEventListener('load', () => {
     // gl3 initialize
     gl3.init('canvas');
     if(!gl3.ready){console.log('initialize error'); return;}
-    canvas = gl3.canvas; gl = gl3.gl;
+    gl = gl3.gl;
+    canvas = gl3.canvas;
     canvas.width  = canvasWidth = window.innerWidth;
     canvas.height = canvasHeight = window.innerHeight;
 
-    // extension
-    ext = {};
-    ext.elementIndexUint = gl.getExtension('OES_element_index_uint');
-    ext.textureFloat = gl.getExtension('OES_texture_float');
-    ext.drawBuffers = gl.getExtension('WEBGL_draw_buffers');
-
     // event
     window.addEventListener('keydown', (eve) => {
-        run = (eve.keyCode !== 27);
+        run = (eve.key !== 'Escape');
         console.log(nowTime);
     }, true);
 
@@ -159,7 +154,7 @@ function init(){
     gWeight = gaussWeight(20, 100.0);
 
     // tiled plane point mesh
-    let tiledPlanePointData = tiledPlanePoint(gpgpuBufferSize);
+    let tiledPlanePointData = tiledPlanePoint(GPGPU_BUFFER_SIZE);
     let tiledPlanePointVBO = [
         gl3.createVbo(tiledPlanePointData.position),
         gl3.createVbo(tiledPlanePointData.color),
@@ -226,18 +221,17 @@ function init(){
             gl.bindTexture(gl.TEXTURE_2D, gl3.textures[i].texture);
         }
     }
-    let noiseBuffer = gl3.createFramebuffer(bufferSize, bufferSize, 3);
+    let noiseBuffer = gl3.createFramebuffer(BUFFER_SIZE, BUFFER_SIZE, 3);
     let positionBuffer = [];
-    positionBuffer[0] = gl3.createFramebufferFloat(gpgpuBufferSize, gpgpuBufferSize, 4);
-    positionBuffer[1] = gl3.createFramebufferFloat(gpgpuBufferSize, gpgpuBufferSize, 5);
+    positionBuffer[0] = gl3.createFramebufferFloat(GPGPU_BUFFER_SIZE, GPGPU_BUFFER_SIZE, 4);
+    positionBuffer[1] = gl3.createFramebufferFloat(GPGPU_BUFFER_SIZE, GPGPU_BUFFER_SIZE, 5);
     let velocityBuffer = [];
-    velocityBuffer[0] = gl3.createFramebufferFloat(gpgpuBufferSize, gpgpuBufferSize, 6);
-    velocityBuffer[1] = gl3.createFramebufferFloat(gpgpuBufferSize, gpgpuBufferSize, 7);
+    velocityBuffer[0] = gl3.createFramebufferFloat(GPGPU_BUFFER_SIZE, GPGPU_BUFFER_SIZE, 6);
+    velocityBuffer[1] = gl3.createFramebufferFloat(GPGPU_BUFFER_SIZE, GPGPU_BUFFER_SIZE, 7);
 
     // texture setting
     (() => {
-        let i;
-        for(i = 0; i < 8; ++i){
+        for(let i = 0; i < 8; ++i){
             gl.activeTexture(gl.TEXTURE0 + i);
             gl.bindTexture(gl.TEXTURE_2D, gl3.textures[i].texture);
         }
@@ -248,8 +242,8 @@ function init(){
     noisePrg.setAttribute(planeVBO, planeIBO);
     gl.bindFramebuffer(gl.FRAMEBUFFER, noiseBuffer.framebuffer);
     gl3.sceneClear([0.0, 0.0, 0.0, 1.0]);
-    gl3.sceneView(0, 0, bufferSize, bufferSize);
-    noisePrg.pushShader([[bufferSize, bufferSize]]);
+    gl3.sceneView(0, 0, BUFFER_SIZE, BUFFER_SIZE);
+    noisePrg.pushShader([[BUFFER_SIZE, BUFFER_SIZE]]);
     gl3.drawElementsInt(gl.TRIANGLES, planeIndex.length);
 
     // gl flags
@@ -295,13 +289,13 @@ function init(){
         // gpgpu update ---------------------------------------------------
         gl.blendFuncSeparate(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE);
         gl.bindFramebuffer(gl.FRAMEBUFFER, velocityBuffer[targetBufferNum].framebuffer);
-        gl3.sceneView(0, 0, gpgpuBufferSize, gpgpuBufferSize);
+        gl3.sceneView(0, 0, GPGPU_BUFFER_SIZE, GPGPU_BUFFER_SIZE);
         velocityPrg.useProgram();
         velocityPrg.setAttribute(planeTexCoordVBO, planeIBO);
         velocityPrg.pushShader([nowTime, 3, 6 + 1 - targetBufferNum]);
         gl3.drawElementsInt(gl.TRIANGLES, planeIndex.length);
         gl.bindFramebuffer(gl.FRAMEBUFFER, positionBuffer[targetBufferNum].framebuffer);
-        gl3.sceneView(0, 0, gpgpuBufferSize, gpgpuBufferSize);
+        gl3.sceneView(0, 0, GPGPU_BUFFER_SIZE, GPGPU_BUFFER_SIZE);
         positionPrg.useProgram();
         positionPrg.setAttribute(planeTexCoordVBO, planeIBO);
         positionPrg.pushShader([nowTime, 3, 4 + 1 - targetBufferNum, 6 + targetBufferNum]);
